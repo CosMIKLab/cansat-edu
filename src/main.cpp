@@ -1,14 +1,10 @@
 #include <Arduino.h>
-#include <Wire.h>
 #include "sensors.hpp"
+#include "board.hpp"
+#include "radio.hpp"
 
 void setup() {
-  Serial.begin(115200);
-
-  // Assuming SDA=19 and SCL=20 as defined in your sensors.cpp
-  Wire.begin(4, 5);
-
-  Serial.println("\nBME280 Struct API Test");
+    board.init();
 
 if (bme.init() == 0) {
     Serial.println("BME280 Initialized successfully!");
@@ -17,7 +13,6 @@ if (bme.init() == 0) {
     while (1) delay(10);
   }
 
-  // Initialize LSM6DSOX
   if (imu.init() == 0) {
     Serial.println("LSM6DSOX Initialized successfully!");
   } else {
@@ -46,7 +41,6 @@ void loop() {
       Serial.println("Error reading temperature.");
   }
 
-  // Read and print LSM6DSOX
   if (imu.read(&imu_data) == 0) {
       Serial.print("Accel (g)   [X, Y, Z]: ");
       Serial.print(imu_data.ax, 3); Serial.print(", ");

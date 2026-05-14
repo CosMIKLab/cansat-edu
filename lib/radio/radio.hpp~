@@ -1,8 +1,7 @@
 #include <Arduino.h>
 
 typedef struct radio_t {
-    const char* settings[2];
-    uint8_t (*init)(void);
+    uint
 	uint8_t (*send)(void);
 } radio_t;
 
