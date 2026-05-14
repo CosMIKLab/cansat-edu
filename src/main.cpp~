@@ -34,12 +34,7 @@ void loop() {
 
   if (bme.read_temp(&temp, &press, &hum) == 0) {
       Serial.print("Temperature: ");
-      Serial.print(temp);
-      Serial.println(" °C");
-      Serial.print("Pressure: ");
-      Serial.print(press);
-      Serial.println(" hPa");
-      Serial.print("Humidity: ");
+    
       Serial.print(hum);
       Serial.println(" % RH");
   } else {
