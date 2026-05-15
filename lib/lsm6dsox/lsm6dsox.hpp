@@ -10,6 +10,8 @@ class LSM6DSOX {
 public:
     bool init();
     bool read(ImuData& data);
+private:
+    bool _ready = false;
 };
 
 extern LSM6DSOX imu;

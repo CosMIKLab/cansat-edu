@@ -27,10 +27,12 @@ bool LSM6DSOX::init() {
     if (readReg(REG_WHO_AM_I) != 0x6C) return false;
     writeReg(REG_CTRL1_XL, 0x40);  // accel: 104 Hz, ±2 g
     writeReg(REG_CTRL2_G,  0x40);  // gyro:  104 Hz, ±250 dps
+    _ready = true;
     return true;
 }
 
 bool LSM6DSOX::read(ImuData& data) {
+    if (!_ready) return false;
     Wire.beginTransmission(LSM_ADDR);
     Wire.write(REG_OUTX_L_G);
     Wire.endTransmission(false);

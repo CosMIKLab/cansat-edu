@@ -35,14 +35,14 @@ cansat-edu/
 
 ```
 setup()
-  └─ board.init()       → Serial @ 115200 baud, I2C on SDA=4 / SCL=5
-  └─ bme.init()         → verify chip ID, load calibration, configure oversampling
-  └─ imu.init()         → verify WHO_AM_I, configure ODR and range
+  └─ board.init()       → Serial @ 115200 baud (200 ms settle), I2C on SDA=4/SCL=5 @ 400 kHz
+  └─ bme.init()         → verify chip ID, load calibration, leave sensor in sleep mode
+  └─ imu.init()         → verify WHO_AM_I, configure ODR/range, set _ready flag
   └─ radio.init()       → open Serial1, send 5 LoRa configuration commands
 
-loop()  (every 2 s)
-  └─ bme.read()         → burst-read 8 bytes, compensate → temp / press / hum
-  └─ imu.read()         → burst-read 12 bytes, scale → ax/ay/az / gx/gy/gz
+loop()  (millis-gated, every 2 s)
+  └─ bme.read()         → trigger forced measurement, poll status, burst-read 8 bytes → temp / press / hum
+  └─ imu.read()         → guard _ready, burst-read 12 bytes, scale → ax/ay/az / gx/gy/gz
   └─ Serial.printf()    → print readings to USB serial monitor
 ```
 

@@ -44,7 +44,9 @@ Gyro  [dps] X: 0.02  Y: -0.01  Z: 0.00
 ...
 ```
 
-Readings print every 2 seconds.
+Readings print every 2 seconds (millis-gated, non-blocking). The firmware waits 200 ms after `Serial.begin()` before printing, so the first init messages will always be visible on a cold boot.
+
+If the LSM6DSOX is absent or fails, the firmware continues and prints BME280 data; the IMU lines are simply omitted.
 
 ## Project configuration
 

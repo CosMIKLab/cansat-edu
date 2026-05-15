@@ -31,8 +31,9 @@ Initialises the IMU. Must be called once in `setup()`.
 1. Reads the WHO_AM_I register (`0x0F`) and verifies it equals `0x6C`. Returns `false` if the device is not found.
 2. Configures the accelerometer: 104 Hz ODR, ±2 g range (`CTRL1_XL = 0x40`).
 3. Configures the gyroscope: 104 Hz ODR, ±250 dps range (`CTRL2_G = 0x40`).
+4. Sets the internal `_ready` flag to `true`.
 
-Returns `true` on success.
+Returns `true` on success. If `init()` returns `false`, subsequent `read()` calls will return `false` immediately without touching the I2C bus.
 
 ```cpp
 if (!imu.init()) {
@@ -50,7 +51,7 @@ Reads a single sample from both sensors in one I2C transaction. Burst-reads 12 b
 |-----------|------|-------------|
 | `data` | `ImuData&` | Output struct, populated on success |
 
-Returns `true` if exactly 12 bytes were received; `false` otherwise.
+Returns `true` if exactly 12 bytes were received; `false` if the device was not initialised (`_ready` is `false`) or the I2C read returned fewer than 12 bytes.
 
 ```cpp
 ImuData d;

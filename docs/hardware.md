@@ -9,7 +9,7 @@
 
 ## I2C bus
 
-Both sensors share the same I2C bus. Pin assignments are defined in `include/config.hpp`:
+Both sensors share the same I2C bus running at **400 kHz** (fast mode). Pin assignments and clock speed are set in `Board::init()` via `Wire.begin()` + `Wire.setClock(400000)`, using constants from `include/config.hpp`:
 
 | Signal | ESP-12E GPIO | Default pin number |
 |--------|--------------|--------------------|

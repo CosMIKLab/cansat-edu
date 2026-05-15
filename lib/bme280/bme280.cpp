@@ -106,12 +106,16 @@ bool BME280::init() {
     if (readReg(REG_CHIPID) != 0x60) return false;
     _readCalibration();
     writeReg(REG_CTRL_HUM,  0x01);  // humidity oversampling x1
-    writeReg(REG_CONFIG,    0xA0);  // standby 1000 ms
-    writeReg(REG_CTRL_MEAS, 0x27);  // temp/press oversampling x1, normal mode
+    writeReg(REG_CTRL_MEAS, 0x00);  // sleep mode — read() triggers forced measurements
     return true;
 }
 
 bool BME280::read(float& temp, float& press, float& hum) {
+    writeReg(REG_CTRL_MEAS, 0x25);  // forced mode, temp+press oversampling x1
+    uint8_t timeout = 100;
+    while ((readReg(REG_STATUS) & 0x08) && --timeout) delay(1);
+    if (!timeout) return false;
+
     Wire.beginTransmission(BME280_ADDR);
     Wire.write(REG_PRESS_MSB);
     Wire.endTransmission(false);
