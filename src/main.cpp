@@ -1,59 +1,47 @@
 #include <Arduino.h>
-#include "sensors.hpp"
 #include "board.hpp"
+#include "bme280.hpp"
+#include "lsm6dsox.hpp"
 #include "radio.hpp"
 
 void setup() {
     board.init();
 
-if (bme.init() == 0) {
-    Serial.println("BME280 Initialized successfully!");
-  } else {
-    Serial.println("BME280 Initialization failed! Check wiring.");
-    while (1) delay(10);
-  }
+    if (!bme.init()) {
+        Serial.println("BME280 init failed! Check wiring.");
+        while (1) delay(10);
+    }
+    Serial.println("BME280 initialized.");
 
-  if (imu.init() == 0) {
-    Serial.println("LSM6DSOX Initialized successfully!");
-  } else {
-    Serial.println("LSM6DSOX Initialization failed! Check wiring.");
-  }
+    if (!imu.init()) {
+        Serial.println("LSM6DSOX init failed! Check wiring.");
+    } else {
+        Serial.println("LSM6DSOX initialized.");
+    }
+
+    if (!radio.init()) {
+        Serial.println("Radio init failed!");
+    } else {
+        Serial.println("Radio initialized.");
+    }
 }
 
-float temp = 0.0;
-float press = 0.0;
-float hum = 0.0;
-imu_data_t imu_data;
+float temp, press, hum;
+ImuData imuData;
 
 void loop() {
+    if (bme.read(temp, press, hum)) {
+        Serial.printf("T: %.2f C  P: %.2f hPa  H: %.2f%%\n", temp, press, hum);
+    } else {
+        Serial.println("BME280 read error.");
+    }
 
-  if (bme.read_temp(&temp, &press, &hum) == 0) {
-      Serial.print("Temperature: ");
-      Serial.print(temp);
-      Serial.println(" °C");
-      Serial.print("Pressure: ");
-      Serial.print(press);
-      Serial.println(" hPa");
-      Serial.print("Humidity: ");
-      Serial.print(hum);
-      Serial.println(" % RH");
-  } else {
-      Serial.println("Error reading temperature.");
-  }
+    if (imu.read(imuData)) {
+        Serial.printf("Accel [g]   X: %.3f  Y: %.3f  Z: %.3f\n", imuData.ax, imuData.ay, imuData.az);
+        Serial.printf("Gyro  [dps] X: %.2f  Y: %.2f  Z: %.2f\n", imuData.gx, imuData.gy, imuData.gz);
+    } else {
+        Serial.println("LSM6DSOX read error.");
+    }
 
-  if (imu.read(&imu_data) == 0) {
-      Serial.print("Accel (g)   [X, Y, Z]: ");
-      Serial.print(imu_data.ax, 3); Serial.print(", ");
-      Serial.print(imu_data.ay, 3); Serial.print(", ");
-      Serial.println(imu_data.az, 3);
-
-      Serial.print("Gyro  (dps) [X, Y, Z]: ");
-      Serial.print(imu_data.gx, 2); Serial.print(", ");
-      Serial.print(imu_data.gy, 2); Serial.print(", ");
-      Serial.println(imu_data.gz, 2);
-  } else {
-      Serial.println("Error reading LSM6DSOX.");
-  }
-
-  delay(2000);
+    delay(2000);
 }

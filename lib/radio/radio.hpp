@@ -1,16 +1,15 @@
-#ifndef RADIO_HPP
-#define RADIO_HPP
+#pragma once
+#include <stdint.h>
 
-#include <Arduino.h>
+static constexpr uint8_t RADIO_SETTINGS_LEN = 5;
 
-#define SETTINGS_LENGTH 5
+class Radio {
+public:
+    bool init();
+    bool send(const uint8_t* payload, uint8_t len);
 
-typedef struct radio_t {
-    const char* settings[SETTINGS_LENGTH];
-    uint8_t (*init)(char* settings[SETTINGS_LENGTH]);
-	uint8_t (*send)(void);
-} radio_t;
+private:
+    static const char* _settings[RADIO_SETTINGS_LEN];
+};
 
-extern radio_t radio;
-
-#endif /* RADIO_HPP */
+extern Radio radio;
