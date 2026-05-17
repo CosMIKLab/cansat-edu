@@ -10,8 +10,9 @@ void setup() {
     if (!bme.init()) {
         Serial.println("BME280 init failed! Check wiring.");
         while (1) delay(10);
+    } else {
+        Serial.println("BME280 initialized.");
     }
-    Serial.println("BME280 initialized.");
 
     if (!imu.init()) {
         Serial.println("LSM6DSOX init failed! Check wiring.");
@@ -30,7 +31,9 @@ static uint32_t lastRead = 0;
 static constexpr uint32_t READ_INTERVAL_MS = 2000;
 
 void loop() {
-    if (millis() - lastRead < READ_INTERVAL_MS) return;
+
+    
+    /*if (millis() - lastRead < READ_INTERVAL_MS) return;
     lastRead = millis();
 
     float temp, press, hum;
@@ -46,5 +49,5 @@ void loop() {
         Serial.printf("Gyro  [dps] X: %.2f  Y: %.2f  Z: %.2f\n", imuData.gx, imuData.gy, imuData.gz);
     } else {
         Serial.println("LSM6DSOX read error.");
-    }
+    }*/
 }

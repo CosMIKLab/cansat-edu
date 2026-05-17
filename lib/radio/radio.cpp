@@ -11,23 +11,31 @@ const char* Radio::_settings[RADIO_SETTINGS_LEN] = {
 };
 
 bool Radio::init() {
-    Serial1.begin(BAUD_RADIO);
     for (uint8_t i = 0; i < RADIO_SETTINGS_LEN; i++) {
-        Serial1.print("radio set ");
-        Serial1.print(_settings[i]);
-        Serial1.print("\r\n");
+        Serial.print("radio set ");
+        Serial.print(_settings[i]);
+        Serial.print("\r\n");
     }
     return true;
 }
 
 bool Radio::send(const uint8_t* payload, uint8_t len) {
-    Serial1.print("radio tx ");
+    Serial.print("radio tx ");
     for (uint8_t i = 0; i < len; i++) {
-        if (payload[i] < 0x10) Serial1.print('0');
-        Serial1.print(payload[i], HEX);
+        if (payload[i] < 0x10) Serial.print('0');
+        Serial.print(payload[i], HEX);
     }
-    Serial1.print("\r\n");
+    Serial.print("\r\n");
     return true;
+}
+
+bool Radio:receive(void) {
+    String msg;
+    Serial.print("radio rx 0\r\n");
+    while(1) {
+        msg = Serial.readString();
+        
+    }
 }
 
 Radio radio;

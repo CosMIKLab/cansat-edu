@@ -7,6 +7,7 @@ class Radio {
 public:
     bool init();
     bool send(const uint8_t* payload, uint8_t len);
+    bool receive(void);
 
 private:
     static const char* _settings[RADIO_SETTINGS_LEN];

@@ -1,0 +1,1 @@
+sudo openocd -f interface/cmsis-dap.cfg -f target/at91samdXX.cfg -c "program ./lib/radio/radio_uti.hex verify reset exit"
