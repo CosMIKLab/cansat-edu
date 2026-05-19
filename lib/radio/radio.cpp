@@ -29,13 +29,4 @@ bool Radio::send(const uint8_t* payload, uint8_t len) {
     return true;
 }
 
-bool Radio:receive(void) {
-    String msg;
-    Serial.print("radio rx 0\r\n");
-    while(1) {
-        msg = Serial.readString();
-        
-    }
-}
-
 Radio radio;
