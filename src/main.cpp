@@ -3,6 +3,7 @@
 #include "bme280.hpp"
 #include "lsm6dsox.hpp"
 #include "radio.hpp"
+#include "storage.hpp"
 
 void setup() {
     board.init();
@@ -13,16 +14,20 @@ void setup() {
     }
     Serial.println("BME280 initialized.");
 
-    if (!imu.init()) {
-        Serial.println("LSM6DSOX init failed! Check wiring.");
-    } else {
-        Serial.println("LSM6DSOX initialized.");
-    }
+    bool imuOk = imu.init();
+    if (!imuOk) Serial.println("LSM6DSOX init failed! Check wiring.");
+    else        Serial.println("LSM6DSOX initialized.");
 
-    if (!radio.init()) {
-        Serial.println("Radio init failed!");
+    bool radioOk = radio.init();
+    if (!radioOk) Serial.println("Radio init failed!");
+    else          Serial.println("Radio initialized.");
+
+    if (!Storage::init(PIN_SD_CS)) {
+        Serial.println("SD card init failed! Logging disabled.");
     } else {
-        Serial.println("Radio initialized.");
+        Serial.println("SD card ready.");
+        Storage::event(imuOk   ? "LSM6DSOX OK"   : "LSM6DSOX FAIL");
+        Storage::event(radioOk ? "RADIO OK"       : "RADIO FAIL");
     }
 }
 
@@ -33,18 +38,24 @@ void loop() {
     if (millis() - lastRead < READ_INTERVAL_MS) return;
     lastRead = millis();
 
-    float temp, press, hum;
-    if (bme.read(temp, press, hum)) {
-        Serial.printf("T: %.2f C  P: %.2f hPa  H: %.2f%%\n", temp, press, hum);
+    TelemetryRecord rec = {};
+    rec.time_ms = millis();
+
+    if (bme.read(rec.temp, rec.pressure, rec.humidity)) {
+        Serial.printf("T: %.2f C  P: %.2f hPa  H: %.2f%%\n", rec.temp, rec.pressure, rec.humidity);
     } else {
         Serial.println("BME280 read error.");
     }
 
     ImuData imuData;
     if (imu.read(imuData)) {
-        Serial.printf("Accel [g]   X: %.3f  Y: %.3f  Z: %.3f\n", imuData.ax, imuData.ay, imuData.az);
-        Serial.printf("Gyro  [dps] X: %.2f  Y: %.2f  Z: %.2f\n", imuData.gx, imuData.gy, imuData.gz);
+        rec.ax = imuData.ax; rec.ay = imuData.ay; rec.az = imuData.az;
+        rec.gx = imuData.gx; rec.gy = imuData.gy; rec.gz = imuData.gz;
+        Serial.printf("Accel [g]   X: %.3f  Y: %.3f  Z: %.3f\n", rec.ax, rec.ay, rec.az);
+        Serial.printf("Gyro  [dps] X: %.2f  Y: %.2f  Z: %.2f\n", rec.gx, rec.gy, rec.gz);
     } else {
         Serial.println("LSM6DSOX read error.");
     }
+
+    Storage::log(rec);
 }
