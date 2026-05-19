@@ -5,8 +5,7 @@
 static constexpr uint8_t  PIN_SDA = 4;
 static constexpr uint8_t  PIN_SCL = 5;
 
-// UART baud rates
-static constexpr uint32_t BAUD_USB   = 115200;
+// UART baud rate (shared — hardware switch selects USB or radio)
 static constexpr uint32_t BAUD_RADIO = 115200;
 
 // I2C addresses
