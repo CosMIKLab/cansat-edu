@@ -54,16 +54,16 @@ Pull-up resistors (4.7 kΩ) are required on SDA and SCL to 3.3 V unless the brea
 
 ## Radio — RN2483 (LoRa)
 
-The radio module communicates over UART using AT-style commands. The ESP8266 `Serial1` peripheral is used (TX only on GPIO2; RX is not available on ESP-12E without remapping).
+The radio module communicates over UART using AT-style commands. The ESP8266 `Serial` (UART0, TX on GPIO1) is **shared** between the USB-to-serial adapter and the RN2483 via a physical switch on the board.
 
-| Signal | ESP-12E | RN2483 |
-|--------|---------|--------|
-| TX | GPIO2 (Serial1 TX) | RX |
-| RX | — (not connected) | TX |
-| VCC | 3.3 V | 3.3 V |
-| GND | GND | GND |
+| Signal | ESP-12E | Description |
+|--------|---------|-------------|
+| TX | GPIO1 (Serial TX) | Routed by switch to USB adapter or RN2483 RX |
+| Switch | — | **USB** position for monitoring/flashing; **Radio** position for flight |
+| VCC | 3.3 V | — |
+| GND | GND | — |
 
-> The current firmware only transmits; incoming responses from the RN2483 are not parsed. Full bidirectional communication requires wiring RX and adding response handling in `radio.cpp`.
+> Set the switch to **Radio** before a flight so AT commands reach the RN2483. Set it back to **USB** for serial monitoring or flashing.
 
 ## Full wiring diagram (ASCII)
 
@@ -81,5 +81,6 @@ ESP-12E GPIO4 ──[4.7k]── SDA ── BME280 SDA
 ESP-12E GPIO5 ──[4.7k]── SCL ── BME280 SCL
                               └─ LSM6DSOX SCL
 
-ESP-12E GPIO2 (Serial1 TX) ─────────────── RN2483 RX
+ESP-12E GPIO1 (Serial TX) ──[SWITCH]──┬── RN2483 RX       (switch → Radio)
+                                      └── USB-serial RX   (switch → USB)
 ```

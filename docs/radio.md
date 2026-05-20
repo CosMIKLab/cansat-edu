@@ -2,7 +2,7 @@
 
 **Files:** `lib/radio/radio.hpp`, `lib/radio/radio.cpp`
 
-The radio module drives a LoRa transceiver (RN2483 or compatible) using its ASCII AT-command UART interface. The ESP8266 `Serial1` peripheral is used (TX on GPIO2).
+The radio module drives a LoRa transceiver (RN2483 or compatible) using its ASCII AT-command UART interface. The ESP8266 `Serial` (UART0, TX on GPIO1) is shared between the USB-to-serial adapter and the RN2483 via a **physical switch** on the board. The switch selects which device receives the UART signal.
 
 ---
 
@@ -10,7 +10,7 @@ The radio module drives a LoRa transceiver (RN2483 or compatible) using its ASCI
 
 ### `bool Radio::init()`
 
-Opens `Serial1` at `BAUD_RADIO` and sends the 5 configuration commands to the radio module. Each command is written as:
+Sends the 5 configuration commands to the radio module over `Serial` (shared UART). Make sure the physical switch is set to the **Radio** position before calling `init()`. Each command is written as:
 
 ```
 radio set <setting>\r\n
@@ -82,9 +82,9 @@ CanSat flights typically use SF7 or SF9 to keep latency low during the descent p
 
 ## Notes
 
-- **TX only:** The ESP-12E exposes `Serial1` as TX-only (GPIO2). Receiving acknowledgments from the RN2483 requires wiring GPIO3 (U0RXD) and swapping to `Serial` with software remapping, or using a GPIO with SoftwareSerial.
+- **Physical switch:** `Serial` (UART0, GPIO1 TX) is routed through a hardware switch. Set the switch to **USB** for `pio device monitor` / flashing; set it to **Radio** before a flight so AT commands reach the RN2483.
 - **Duty cycle:** The 868 MHz EU band enforces a 1% duty cycle. At SF7 with ~50 ms packets, the maximum safe transmission rate is roughly one packet per 5 seconds.
-- **Initialisation order:** `Radio::init()` must be called after `Board::init()` because it depends on `Serial1`, which is part of the Arduino framework initialised during `board.init()`.
+- **Initialisation order:** `Radio::init()` must be called after `Board::init()` because it uses `Serial`, which `Board::init()` opens.
 
 ---
 

@@ -11,7 +11,7 @@
 | ESP8266 ESP-12E | Microcontroller | — |
 | Bosch BME280 | Temperature / Pressure / Humidity | I2C @ 0x76 |
 | ST LSM6DSOX | Accelerometer + Gyroscope (IMU) | I2C @ 0x6A |
-| RN2483 (or compatible) | LoRa radio transceiver | UART (Serial1) |
+| RN2483 (or compatible) | LoRa radio transceiver | UART (Serial, via switch) |
 
 ## Architecture
 
@@ -38,7 +38,7 @@ setup()
   └─ board.init()       → Serial @ 115200 baud (200 ms settle), I2C on SDA=4/SCL=5 @ 400 kHz
   └─ bme.init()         → verify chip ID, load calibration, leave sensor in sleep mode
   └─ imu.init()         → verify WHO_AM_I, configure ODR/range, set _ready flag
-  └─ radio.init()       → open Serial1, send 5 LoRa configuration commands
+  └─ radio.init()       → send 5 LoRa configuration commands over Serial (switch selects USB vs radio)
 
 loop()  (millis-gated, every 2 s)
   └─ bme.read()         → trigger forced measurement, poll status, burst-read 8 bytes → temp / press / hum

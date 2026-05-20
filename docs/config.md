@@ -20,14 +20,12 @@ GPIO pin numbers for the I2C bus. Change these if your board uses different pins
 ## UART baud rates
 
 ```cpp
-static constexpr uint32_t BAUD_USB   = 115200;
 static constexpr uint32_t BAUD_RADIO = 115200;
 ```
 
 | Constant | Used by | Purpose |
 |----------|---------|---------|
-| `BAUD_USB` | `Board::init()` → `Serial.begin()` | USB serial monitor |
-| `BAUD_RADIO` | `Radio::init()` → `Serial1.begin()` | UART to LoRa module |
+| `BAUD_RADIO` | `Board::init()` → `Serial.begin()` and `Radio::init()` | Shared baud rate for USB monitor and LoRa module (same physical UART, routed by switch) |
 
 ---
 

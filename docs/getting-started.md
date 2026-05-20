@@ -28,6 +28,8 @@ The upload baud rate is set to `115200` in `platformio.ini`. If the upload fails
 
 ## Serial monitor
 
+> **Switch position:** Set the physical UART switch to **USB** before running the serial monitor. Set it to **Radio** before a flight so AT commands reach the RN2483.
+
 ```bash
 pio device monitor
 ```
