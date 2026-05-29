@@ -1,17 +1,19 @@
-#pragma once
+#ifndef LSM6DSOX_HPP
+#define LSM6DSOX_HPP
+
 #include <stdint.h>
 
 struct ImuData {
-    float ax, ay, az;  // Accelerometer in g
-    float gx, gy, gz;  // Gyroscope in dps
+    float ax, ay, az;
+    float gx, gy, gz;
 };
 
 class LSM6DSOX {
 public:
     bool init();
     bool read(ImuData& data);
-private:
-    bool _ready = false;
 };
 
 extern LSM6DSOX imu;
+
+#endif /* LSM6DSOX_HPP */

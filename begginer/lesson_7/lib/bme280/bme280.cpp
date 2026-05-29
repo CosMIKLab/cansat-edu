@@ -3,17 +3,23 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-// BME280 registers
 #define REG_CHIPID    0xD0
-#define REG_SOFTRESET 0xE0
 #define REG_CTRL_HUM  0xF2
 #define REG_STATUS    0xF3
 #define REG_CTRL_MEAS 0xF4
-#define REG_CONFIG    0xF5
 #define REG_PRESS_MSB 0xF7
 #define REG_DIG_T1    0x88
 #define REG_DIG_H1    0xA1
 #define REG_DIG_H2    0xE1
+
+static int32_t  _t_fine = 0;
+static uint16_t _dig_T1;
+static int16_t  _dig_T2, _dig_T3;
+static uint16_t _dig_P1;
+static int16_t  _dig_P2, _dig_P3, _dig_P4, _dig_P5, _dig_P6, _dig_P7, _dig_P8, _dig_P9;
+static uint8_t  _dig_H1, _dig_H3;
+static int16_t  _dig_H2, _dig_H4, _dig_H5;
+static int8_t   _dig_H6;
 
 static uint8_t readReg(uint8_t reg) {
     Wire.beginTransmission(BME280_ADDR);
@@ -40,11 +46,10 @@ static void writeReg(uint8_t reg, uint8_t value) {
     Wire.endTransmission();
 }
 
-void BME280::_readCalibration() {
+static void _readCalibration() {
     _dig_T1 = readReg16LE(REG_DIG_T1);
     _dig_T2 = (int16_t)readReg16LE(REG_DIG_T1 + 2);
     _dig_T3 = (int16_t)readReg16LE(REG_DIG_T1 + 4);
-
     _dig_P1 = readReg16LE(REG_DIG_T1 + 6);
     _dig_P2 = (int16_t)readReg16LE(REG_DIG_T1 + 8);
     _dig_P3 = (int16_t)readReg16LE(REG_DIG_T1 + 10);
@@ -54,11 +59,9 @@ void BME280::_readCalibration() {
     _dig_P7 = (int16_t)readReg16LE(REG_DIG_T1 + 18);
     _dig_P8 = (int16_t)readReg16LE(REG_DIG_T1 + 20);
     _dig_P9 = (int16_t)readReg16LE(REG_DIG_T1 + 22);
-
     _dig_H1 = readReg(REG_DIG_H1);
     _dig_H2 = (int16_t)readReg16LE(REG_DIG_H2);
     _dig_H3 = readReg(REG_DIG_H2 + 2);
-
     int8_t h4_msb = readReg(REG_DIG_H2 + 3);
     int8_t h4_lsb = readReg(REG_DIG_H2 + 4);
     int8_t h5_msb = readReg(REG_DIG_H2 + 5);
@@ -67,14 +70,14 @@ void BME280::_readCalibration() {
     _dig_H6 = (int8_t)readReg(REG_DIG_H2 + 6);
 }
 
-float BME280::_compensateTemp(int32_t adc_T) {
+static float _compensateTemp(int32_t adc_T) {
     int32_t var1 = ((((adc_T >> 3) - ((int32_t)_dig_T1 << 1))) * ((int32_t)_dig_T2)) >> 11;
     int32_t var2 = (((((adc_T >> 4) - ((int32_t)_dig_T1)) * ((adc_T >> 4) - ((int32_t)_dig_T1))) >> 12) * ((int32_t)_dig_T3)) >> 14;
     _t_fine = var1 + var2;
     return ((float)((_t_fine * 5 + 128) >> 8)) / 100.0f;
 }
 
-float BME280::_compensatePressure(int32_t adc_P) {
+static float _compensatePressure(int32_t adc_P) {
     int64_t var1 = ((int64_t)_t_fine) - 128000;
     int64_t var2 = var1 * var1 * (int64_t)_dig_P6;
     var2 = var2 + ((var1 * (int64_t)_dig_P5) << 17);
@@ -89,7 +92,7 @@ float BME280::_compensatePressure(int32_t adc_P) {
     return (float)((p + var1 + var2) >> 8) / 256.0f;
 }
 
-float BME280::_compensateHumidity(int32_t adc_H) {
+static float _compensateHumidity(int32_t adc_H) {
     int32_t v = _t_fine - 76800;
     v = (((((adc_H << 14) - (((int32_t)_dig_H4) << 20) - (((int32_t)_dig_H5) * v)) +
           16384) >> 15) *
@@ -105,13 +108,13 @@ float BME280::_compensateHumidity(int32_t adc_H) {
 bool BME280::init() {
     if (readReg(REG_CHIPID) != 0x60) return false;
     _readCalibration();
-    writeReg(REG_CTRL_HUM,  0x01);  // humidity oversampling x1
-    writeReg(REG_CTRL_MEAS, 0x00);  // sleep mode — read() triggers forced measurements
+    writeReg(REG_CTRL_HUM,  0x01);
+    writeReg(REG_CTRL_MEAS, 0x00);
     return true;
 }
 
 bool BME280::read(float& temp, float& press, float& hum) {
-    writeReg(REG_CTRL_MEAS, 0x25);  // forced mode, temp+press oversampling x1
+    writeReg(REG_CTRL_MEAS, 0x25);
     uint8_t timeout = 100;
     while ((readReg(REG_STATUS) & 0x08) && --timeout) delay(1);
     if (!timeout) return false;

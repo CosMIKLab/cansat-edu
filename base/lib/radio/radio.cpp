@@ -7,7 +7,8 @@ const char* Radio::_settings[RADIO_SETTINGS_LEN] = {
     "freq 868100000",
     "sf sf7",
     "pa off",
-    "pwr 12"
+    "pwr 12",
+    "rx 0"
 };
 
 bool Radio::init() {

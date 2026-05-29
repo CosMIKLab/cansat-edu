@@ -1,4 +1,6 @@
-#pragma once
+#ifndef RADIO_EASY_HPP
+#define RADIO_EASY_HPP
+
 #include <Arduino.h>
 
 class RadioEasy {
@@ -9,3 +11,5 @@ public:
 };
 
 extern RadioEasy radio;
+
+#endif /* RADIO_EASY_HPP */

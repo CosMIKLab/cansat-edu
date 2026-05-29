@@ -8,6 +8,8 @@
 #define REG_CTRL2_G   0x11
 #define REG_OUTX_L_G  0x22
 
+static bool _ready = false;
+
 static uint8_t readReg(uint8_t reg) {
     Wire.beginTransmission(LSM_ADDR);
     Wire.write(reg);
@@ -25,8 +27,8 @@ static void writeReg(uint8_t reg, uint8_t value) {
 
 bool LSM6DSOX::init() {
     if (readReg(REG_WHO_AM_I) != 0x6C) return false;
-    writeReg(REG_CTRL1_XL, 0x40);  // accel: 104 Hz, ±2 g
-    writeReg(REG_CTRL2_G,  0x40);  // gyro:  104 Hz, ±250 dps
+    writeReg(REG_CTRL1_XL, 0x40);
+    writeReg(REG_CTRL2_G,  0x40);
     _ready = true;
     return true;
 }

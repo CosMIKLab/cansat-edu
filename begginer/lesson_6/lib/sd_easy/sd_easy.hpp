@@ -1,4 +1,6 @@
-#pragma once
+#ifndef SD_EASY_HPP
+#define SD_EASY_HPP
+
 #include <Arduino.h>
 
 class SdEasy {
@@ -9,3 +11,5 @@ public:
 };
 
 extern SdEasy sd;
+
+#endif /* SD_EASY_HPP */

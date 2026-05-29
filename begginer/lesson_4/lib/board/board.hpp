@@ -1,4 +1,6 @@
-#pragma once
+#ifndef BOARD_HPP
+#define BOARD_HPP
+
 #include <Arduino.h>
 #include <Wire.h>
 #include "config.hpp"
@@ -9,3 +11,5 @@ public:
 };
 
 extern Board board;
+
+#endif /* BOARD_HPP */

@@ -1,4 +1,6 @@
-#pragma once
+#ifndef WIFI_EASY_HPP
+#define WIFI_EASY_HPP
+
 #include <Arduino.h>
 
 class WiFiEasy {
@@ -9,3 +11,5 @@ public:
 };
 
 extern WiFiEasy wifi;
+
+#endif /* WIFI_EASY_HPP */

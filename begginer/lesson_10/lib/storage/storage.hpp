@@ -1,4 +1,6 @@
-#pragma once
+#ifndef STORAGE_HPP
+#define STORAGE_HPP
+
 #include <stdint.h>
 
 struct TelemetryRecord {
@@ -15,3 +17,5 @@ namespace Storage {
     void flush();
     void close();
 }
+
+#endif /* STORAGE_HPP */
