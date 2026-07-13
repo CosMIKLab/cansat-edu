@@ -14,6 +14,11 @@ cd cansat-edu
 pio run
 ```
 
+This doc covers the reference firmware in `base/`. If you're after a lesson from the
+curriculum (begginer/intermediate/advanced) rather than this reference firmware, see
+[`docs/download-guide.md`](../download-guide.md) instead — lessons are fetched with the
+`mecseksat` CLI, not a repo clone.
+
 PlatformIO will automatically download the ESP8266 Arduino core on the first build.
 
 ## Flash
@@ -64,3 +69,7 @@ All hardware constants (pin numbers, I2C addresses, baud rates) live in [`includ
 | Upload speed | 115200 |
 | Monitor speed | 115200 |
 | Extra build flag | `-Iinclude` (exposes `config.hpp` to all library modules) |
+
+## See also
+
+[overview.md](overview.md) — project architecture, hardware list, data flow.

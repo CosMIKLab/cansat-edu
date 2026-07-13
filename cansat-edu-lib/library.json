@@ -1,0 +1,18 @@
+{
+  "name": "cansat-edu",
+  "version": "1.0.0",
+  "description": "MecsekSat CanSat Edu framework — beginner-friendly sensor, radio, WiFi, and SD card library for ESP8266 (Arduino).",
+  "keywords": ["cansat", "mecseksat", "bme280", "lsm6dsox", "lora", "rn2483", "education"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mecseksat/cansat-edu"
+  },
+  "authors": [
+    {
+      "name": "MecsekSat Team"
+    }
+  ],
+  "license": "MIT",
+  "frameworks": "arduino",
+  "platforms": "espressif8266"
+}

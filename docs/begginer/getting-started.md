@@ -3,12 +3,14 @@
 ## Prerequisites
 
 - [PlatformIO Core CLI](https://platformio.org/install/cli) — one-time install, handles compilation and flashing
+- The `mecseksat` CLI — see install instructions in [`../download-guide.md`](../download-guide.md)
+- A school access key (from your teacher or the MecsekSat team)
 - USB cable to the CanSat board
-- Any text editor (VS Code recommended)
 
-Verify PlatformIO is installed:
+Verify both are installed:
 ```bash
 pio --version
+mecseksat help
 ```
 
 ---
@@ -16,12 +18,19 @@ pio --version
 ## First run
 
 ```bash
-cd begginer
-./cansat run        # Mac / Linux
-cansat run          # Windows CMD
+mecseksat login <your school key>
+mecseksat get begginer/1
+cd begginer/lesson_1
+mecseksat run
 ```
 
-This compiles the starter `mission.cpp`, flashes it to the board, and opens the serial monitor automatically.
+`mecseksat get` downloads the lesson content and — for the begginer track — the
+`cansat-edu-lib` framework this doc describes, placed as a sibling directory so
+`platformio.ini`'s `lib_extra_dirs = ../../cansat-edu-lib` resolves without any extra
+steps.
+
+`mecseksat run` compiles `mission.cpp`, flashes it to the board, and opens the serial
+monitor automatically.
 
 Expected output at 115200 baud:
 ```
@@ -59,21 +68,23 @@ void mission_loop() {
 }
 ```
 
-After editing, run `./cansat run` again to flash the new version.
+After editing, run `mecseksat run` again to flash the new version.
 
 ---
 
 ## CLI reference
 
-Run all commands from inside the `begginer/` folder.
+Run all commands from inside the downloaded lesson directory (`begginer/lesson_1/`, etc).
 
 | Command | What it does |
 |---------|-------------|
-| `./cansat run` | Compile → flash → open serial monitor |
-| `./cansat build` | Compile only (check for errors without flashing) |
-| `./cansat monitor` | Open serial monitor (board already flashed) |
-| `./cansat new` | Reset `mission.cpp` to the original starter template |
-| `./cansat help` | Print command list |
+| `mecseksat run` | Compile → flash → open serial monitor |
+| `mecseksat build` | Compile only (check for errors without flashing) |
+| `mecseksat monitor` | Open serial monitor (board already flashed) |
+| `mecseksat check` | Hardware diagnostic: test all sensors/SD/radio |
+| `mecseksat update` | Download the latest version of this lesson (keeps `mission.cpp`) |
+| `mecseksat new` | Reset `mission.cpp` to the original starter template |
+| `mecseksat help` | Print command list |
 
 > **Physical switch:** Set the board's UART switch to **USB** before running the monitor or flashing. Set it to **Radio** before a flight so AT commands reach the RN2483.
 
@@ -81,7 +92,7 @@ Run all commands from inside the `begginer/` folder.
 
 ## Flashing tips
 
-- If upload fails: hold the BOOT button, press RESET, then re-run `./cansat run`
+- If upload fails: hold the BOOT button, press RESET, then re-run `mecseksat run`
 - Upload speed is 115200 baud (set in `platformio.ini`)
 - The board auto-resets after a successful flash and starts running your code immediately
 
@@ -92,8 +103,16 @@ Run all commands from inside the `begginer/` folder.
 If your `mission.cpp` is broken and you want to start fresh:
 
 ```bash
-./cansat new       # Mac/Linux
-cansat new         # Windows
+mecseksat new
 ```
 
 This copies the pristine `mission_template.cpp` back to `src/mission.cpp`.
+
+---
+
+## See also
+
+| File | Contents |
+|------|----------|
+| [api.md](api.md) | Full API reference for `sensors`, `radio`, `wifi`, `sd` |
+| [overview.md](overview.md) | Framework architecture, downloaded-lesson layout |

@@ -1,5 +1,7 @@
 # API Reference — Beginner Framework
 
+See also: [overview.md](overview.md) (architecture) · [getting-started.md](getting-started.md) (first run, CLI reference)
+
 Include everything with one line at the top of `mission.cpp`:
 
 ```cpp
