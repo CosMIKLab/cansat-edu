@@ -25,7 +25,7 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-LESSON_SERVER_BASE = os.environ.get("MECSEKSAT_SERVER", "https://learn.mecseksat.hu").rstrip("/")
+LESSON_SERVER_BASE = os.environ.get("MECSEKSAT_SERVER", "https://mecseksat.mik.pte.hu").rstrip("/")
 FRAMEWORK_BASE = os.environ.get(
     "MECSEKSAT_FRAMEWORK_BASE",
     "https://github.com/CosMIKLab/cansat-edu/releases/latest/download",
@@ -79,7 +79,7 @@ def api_get(path, auth=False, timeout=15):
 
 
 def fetch_manifest():
-    with api_get("/v1/lessons") as resp:
+    with api_get("/lessons/v1") as resp:
         return json.load(resp)
 
 
@@ -137,7 +137,7 @@ def _extract_lesson_files(src, dest, skip):
 
 
 def download_zip_bytes(track, number):
-    with api_get(f"/v1/download/{track}/{number}", auth=True) as resp:
+    with api_get(f"/lessons/v1/{track}/{number}", auth=True) as resp:
         return resp.read()
 
 
