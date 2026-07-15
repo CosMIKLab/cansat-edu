@@ -21,9 +21,13 @@ and this library automatically, so a student never has to think about the split.
 ```
 cansat-edu-lib/
 ├── library.json / library.properties
-├── board/          ← Serial + I2C init (internal)
-├── bme280/         ← BME280 driver (internal)
-├── lsm6dsox/       ← LSM6DSOX driver (internal)
+├── board/          ← Serial + I2C + shared SPI2 init (internal)
+├── bmp580/         ← BMP580 driver (internal)
+├── aht20/          ← AHT20 driver (internal)
+├── tmp102/         ← TMP102 driver (internal)
+├── lsm6ds3/        ← LSM6DS3 driver (internal)
+├── gnss/           ← SAM-M8Q GNSS driver (internal)
+├── led/            ← WS2816B status LED driver (internal, also student-facing)
 ├── storage/        ← SD card driver (internal)
 ├── sensors/        ← Sensors wrapper (student-facing)
 ├── radio_easy/     ← RadioEasy wrapper (student-facing)
@@ -60,7 +64,7 @@ void mission_setup() { /* runs once at boot */ }
 void mission_loop()  { /* runs every 2 seconds */ }
 ```
 
-`main.cpp` (hidden) calls `board.init()`, `sensors.begin()`, `radio.begin()`, `sd.begin()`, then delegates to the student's two functions.
+`main.cpp` (hidden) calls `board.init()`, `led.begin()`, `sensors.begin()`, `radio.begin()`, `sd.begin()`, then delegates to the student's two functions.
 
 ---
 
@@ -70,11 +74,15 @@ Same PCB as the other levels:
 
 | Component | Role | Interface |
 |-----------|------|-----------|
-| ESP8266 ESP-12E | Microcontroller | — |
-| BME280 | Temp / Pressure / Humidity | I2C @ 0x76 |
-| LSM6DSOX | Accelerometer + Gyroscope | I2C @ 0x6A |
-| RN2483 | LoRa transceiver | UART (shared Serial, via switch) |
-| SD card | Data logging | SPI (GPIO15 CS) |
+| ESP32-S3 | Microcontroller | — |
+| BMP580 | Pressure / temperature | I2C @ 0x46 |
+| AHT20 | Humidity / temperature | I2C @ 0x38 |
+| TMP102 | Secondary temperature | I2C @ 0x49 |
+| LSM6DS3 | Accelerometer + Gyroscope | I2C @ 0x6A (fallback 0x6B) |
+| SAM-M8Q | GNSS receiver | I2C @ 0x42 |
+| E22-900M22S | LoRa transceiver | SPI2 (shared with SD card) |
+| WS2816B | Status LED | GPIO1 (RMT) |
+| SD card | Data logging | SPI2 (GPIO10 CS) |
 
 ---
 

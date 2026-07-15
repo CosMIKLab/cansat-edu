@@ -1,86 +1,155 @@
 # Hardware & Wiring
 
-## Microcontroller — ESP8266 ESP-12E
+## Microcontroller — ESP32-S3
 
-- 80 MHz Xtensa LX106 core
-- 80 KB SRAM, 4 MB flash
+- 240 MHz dual-core Xtensa LX7
+- 320 KB SRAM, 8 MB flash
 - 3.3 V logic — **do not connect 5 V signals directly**
-- I2C is bit-banged via the Arduino Wire library (any two GPIO pins can be used)
+- Native USB-Serial-JTAG — no external USB-to-serial adapter needed
 
-## I2C bus
+## I2C0 bus
 
-Both sensors share the same I2C bus running at **400 kHz** (fast mode). Pin assignments and clock speed are set in `Board::init()` via `Wire.begin()` + `Wire.setClock(400000)`, using constants from `include/config.hpp`:
+All five I2C sensors share the same bus running at **400 kHz** (fast mode). Pin
+assignments and clock speed are set in `Board::init()` via `Wire.begin()` +
+`Wire.setClock()`, using constants from `include/config.hpp`:
 
-| Signal | ESP-12E GPIO | Default pin number |
-|--------|--------------|--------------------|
-| SDA | GPIO4 | 4 |
-| SCL | GPIO5 | 5 |
+| Signal | ESP32-S3 GPIO | Default pin number |
+|--------|---------------|--------------------|
+| SDA | GPIO8 | 8 |
+| SCL | GPIO9 | 9 |
 
 ```
-ESP-12E               BME280 / LSM6DSOX
-  GPIO4 (SDA) ───────── SDA
-  GPIO5 (SCL) ───────── SCL
+ESP32-S3              BMP580 / AHT20 / TMP102 / LSM6DS3 / SAM-M8Q
+  GPIO8 (SDA) ───────── SDA
+  GPIO9 (SCL) ───────── SCL
   3.3V        ───────── VCC
   GND         ───────── GND
 ```
 
-Pull-up resistors (4.7 kΩ) are required on SDA and SCL to 3.3 V unless the breakout boards include them.
+Pull-up resistors (4.7 kΩ) are required on SDA and SCL to 3.3 V unless the breakout
+boards include them.
 
-## BME280
+## BMP580
 
 | Pin | Connection |
 |-----|-----------|
 | VCC | 3.3 V |
 | GND | GND |
-| SDA | GPIO4 |
-| SCL | GPIO5 |
-| SDO | GND (sets I2C address to 0x76) |
-| CSB | 3.3 V (selects I2C mode) |
+| SDA | GPIO8 |
+| SCL | GPIO9 |
 
-> Pulling SDO HIGH changes the I2C address to 0x77. Update `BME280_ADDR` in `config.hpp` if needed.
+Fixed I2C address `0x46` — no address-select pin on this part.
 
-## LSM6DSOX
+## AHT20
+
+| Pin | Connection |
+|-----|-----------|
+| VCC | 3.3 V |
+| GND | GND |
+| SDA | GPIO8 |
+| SCL | GPIO9 |
+
+Fixed I2C address `0x38`.
+
+## TMP102
+
+| Pin | Connection |
+|-----|-----------|
+| VCC | 3.3 V |
+| GND | GND |
+| SDA | GPIO8 |
+| SCL | GPIO9 |
+| ADD0 | GND (sets I2C address to 0x49) |
+
+## LSM6DS3
 
 | Pin | Connection |
 |-----|-----------|
 | VDD | 3.3 V |
 | GND | GND |
-| SDA | GPIO4 |
-| SCL | GPIO5 |
-| SA0 | GND (sets I2C address to 0x6A) |
+| SDA | GPIO8 |
+| SCL | GPIO9 |
+| SA0 | GND or 3.3 V (sets I2C address to 0x6A or 0x6B) |
 | CS  | 3.3 V (selects I2C mode) |
 
-> Pulling SA0 HIGH changes the I2C address to 0x6B. Update `LSM_ADDR` in `config.hpp` if needed.
+> The driver probes `0x6A` first and automatically falls back to `0x6B` if it doesn't answer.
 
-## Radio — RN2483 (LoRa)
+## SAM-M8Q (GNSS)
 
-The radio module communicates over UART using AT-style commands. The ESP8266 `Serial` (UART0, TX on GPIO1) is **shared** between the USB-to-serial adapter and the RN2483 via a physical switch on the board.
+| Pin | Connection |
+|-----|-----------|
+| VCC | 3.3 V |
+| GND | GND |
+| SDA | GPIO8 |
+| SCL | GPIO9 |
 
-| Signal | ESP-12E | Description |
-|--------|---------|-------------|
-| TX | GPIO1 (Serial TX) | Routed by switch to USB adapter or RN2483 RX |
-| Switch | — | **USB** position for monitoring/flashing; **Radio** position for flight |
-| VCC | 3.3 V | — |
-| GND | GND | — |
+Fixed I2C (DDC) address `0x42`. The module streams NMEA sentences continuously; the
+driver polls a pending-byte-count register and reads whatever is available each cycle.
 
-> Set the switch to **Radio** before a flight so AT commands reach the RN2483. Set it back to **USB** for serial monitoring or flashing.
+## SPI2 bus — shared between the micro-SD card and the LoRa radio
+
+| Signal | ESP32-S3 GPIO |
+|--------|---------------|
+| SCK | GPIO12 |
+| MOSI | GPIO11 |
+| MISO | GPIO13 |
+| SD CS | GPIO10 |
+| Radio CS | GPIO2 |
+
+Both chip-selects are configured idle-high before either device is added to the bus, so
+they can share the same clock/data lines without interfering with each other.
+
+## E22-900M22S (SX1262 core) LoRa radio
+
+| Pin | Connection |
+|-----|-----------|
+| VCC | 3.3 V |
+| GND | GND |
+| SCK / MOSI / MISO | shared SPI2 (see above) |
+| CS | GPIO2 |
+| RESET | GPIO42 |
+| BUSY | GPIO41 |
+| DIO1 | GPIO40 |
+| RXEN | GPIO47 (antenna-switch control, driven by the driver — no DIO2 RF-switch wiring) |
+
+## WS2816B status LED
+
+| Pin | Connection |
+|-----|-----------|
+| VCC | 3.3 V or 5 V (per LED datasheet) |
+| GND | GND |
+| DIN | GPIO1 |
+
+Single-pixel, single-wire NZR protocol like WS2812 — but **16-bit per channel**
+(48 bits/pixel, GRB order), not the 8-bit/24-bit WS2812 protocol. Driven directly
+via RMT (`esp32-hal-rmt.h`); see [led.md](led.md) for details and the bug this
+distinction caused during hardware bring-up.
+
+## CAN bus (reserved, not implemented)
+
+| Pin | Connection |
+|-----|-----------|
+| TX | GPIO4 |
+| RX | GPIO5 |
+
+Pins are reserved on the board and in `config.hpp` for a future CAN/TWAI feature — no
+driver exists yet.
 
 ## Full wiring diagram (ASCII)
 
 ```
-                   3.3V ── VCC (BME280)
-                        ── VCC (LSM6DSOX)
-                        ── CSB (BME280)
-                        ── CS  (LSM6DSOX)
+                   3.3V ── VCC (BMP580, AHT20, TMP102, LSM6DS3, SAM-M8Q, radio, LED)
                    GND  ── GND (all)
-                        ── SDO (BME280)   → I2C addr 0x76
-                        ── SA0 (LSM6DSOX) → I2C addr 0x6A
 
-ESP-12E GPIO4 ──[4.7k]── SDA ── BME280 SDA
-                              └─ LSM6DSOX SDA
-ESP-12E GPIO5 ──[4.7k]── SCL ── BME280 SCL
-                              └─ LSM6DSOX SCL
+ESP32-S3 GPIO8 ──[4.7k]── SDA ── BMP580 / AHT20 / TMP102 / LSM6DS3 / SAM-M8Q SDA
+ESP32-S3 GPIO9 ──[4.7k]── SCL ── BMP580 / AHT20 / TMP102 / LSM6DS3 / SAM-M8Q SCL
 
-ESP-12E GPIO1 (Serial TX) ──[SWITCH]──┬── RN2483 RX       (switch → Radio)
-                                      └── USB-serial RX   (switch → USB)
+ESP32-S3 GPIO12 (SCK)  ──┬── SD card SCK
+ESP32-S3 GPIO11 (MOSI) ──┼── SD card MOSI      ──┬── Radio MOSI
+ESP32-S3 GPIO13 (MISO) ──┴── SD card MISO      ──┴── Radio MISO
+ESP32-S3 GPIO10         ──── SD card CS
+ESP32-S3 GPIO2          ──── Radio CS
+ESP32-S3 GPIO42/41/40/47 ─── Radio RESET/BUSY/DIO1/RXEN
+
+ESP32-S3 GPIO1 ──────────── WS2816B LED DIN
 ```
