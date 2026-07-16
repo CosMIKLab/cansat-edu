@@ -34,8 +34,11 @@ monitor automatically.
 
 Expected output at 115200 baud:
 ```
-Sensors: BME280 OK
+Sensors: BMP580 OK
+Sensors: AHT20 OK
+Sensors: TMP102 OK
 Sensors: IMU OK
+Sensors: GNSS OK
 Radio: LoRa ready
 SD: ready
 Temp: 23.45 C
@@ -86,14 +89,14 @@ Run all commands from inside the downloaded lesson directory (`begginer/lesson_1
 | `mecseksat new` | Reset `mission.cpp` to the original starter template |
 | `mecseksat help` | Print command list |
 
-> **Physical switch:** Set the board's UART switch to **USB** before running the monitor or flashing. Set it to **Radio** before a flight so AT commands reach the RN2483.
-
 ---
 
 ## Flashing tips
 
 - If upload fails: hold the BOOT button, press RESET, then re-run `mecseksat run`
 - Upload speed is 115200 baud (set in `platformio.ini`)
+- The board's native USB-Serial-JTAG handles reset/bootloader entry automatically —
+  no external USB-to-serial adapter needed
 - The board auto-resets after a successful flash and starts running your code immediately
 
 ---
@@ -114,5 +117,5 @@ This copies the pristine `mission_template.cpp` back to `src/mission.cpp`.
 
 | File | Contents |
 |------|----------|
-| [api.md](api.md) | Full API reference for `sensors`, `radio`, `wifi`, `sd` |
+| [api.md](api.md) | Full API reference for `sensors`, `radio`, `wifi`, `sd`, `led` |
 | [overview.md](overview.md) | Framework architecture, downloaded-lesson layout |

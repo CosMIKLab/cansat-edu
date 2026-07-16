@@ -1,8 +1,8 @@
 # MecsekSat — CanSat Edu (framework)
 
-Nyílt forráskódú keretrendszer a **MecsekSat CanSat Edu** platformhoz — az ESP8266-os
-panel driverei, a diákoknak szánt `mecseksat` parancssori eszköz, és a referencia
-firmware.
+Nyílt forráskódú keretrendszer a **MecsekSat CanSat Edu** platformhoz — az ESP32-S3-as
+("Mecsek Explorer") panel driverei, a diákoknak szánt `mecseksat` parancssori eszköz, és
+a referencia firmware.
 
 **A tananyag maga (leckeleírások, feladatok) külön, iskolai kulccsal védett tartalom —
 ez a repó csak a keretrendszert tartalmazza.** Lásd [`docs/download-guide.md`](docs/download-guide.md)
@@ -47,11 +47,15 @@ A tényleges leckék (kezdő/haladó Arduino/ESP-IDF pályák) egy külön, priv
 
 | Komponens | Leírás |
 |-----------|--------|
-| ESP8266 ESP-12E | Mikrovezérlő, 80 MHz, 4 MB flash, beépített WiFi |
-| BME280 | Hőmérséklet / légnyomás / páratartalom (I2C 0x76) |
-| LSM6DSOX | 6-tengelyes IMU: gyorsulásmérő + giroszkóp (I2C 0x6A) |
-| RN2483 | LoRa rádió, 868.1 MHz, SF7, UART AT-parancsok |
-| SD kártya | Adatnaplózás, FAT32 |
+| ESP32-S3 | Mikrovezérlő, 240 MHz, 8 MB flash, beépített WiFi |
+| BMP580 | Légnyomás / hőmérséklet (I2C 0x46) |
+| AHT20 | Páratartalom / hőmérséklet (I2C 0x38) |
+| TMP102 | Másodlagos hőmérséklet (I2C 0x49) |
+| LSM6DS3 | 6-tengelyes IMU: gyorsulásmérő + giroszkóp (I2C 0x6A/0x6B) |
+| SAM-M8Q | GNSS vevő (I2C 0x42) |
+| E22-900M22S | LoRa rádió (SX1262), 868.1 MHz, SF7, SPI |
+| WS2816B | Állapotjelző LED (GPIO1) |
+| SD kártya | Adatnaplózás, FAT32, megosztott SPI busz a rádióval |
 
 Részletes kapcsolási rajz: [`docs/base/hardware.md`](docs/base/hardware.md)
 
@@ -60,7 +64,7 @@ Részletes kapcsolási rajz: [`docs/base/hardware.md`](docs/base/hardware.md)
 ## Dokumentáció
 
 - [`docs/download-guide.md`](docs/download-guide.md) — hogyan telepítsd a `mecseksat`-ot és tölts le egy leckét
-- [`docs/base/`](docs/base/) — Nyers driver API (bme280, lsm6dsox, radio)
+- [`docs/base/`](docs/base/) — Nyers driver API (bmp580, aht20, tmp102, lsm6ds3, gnss, led, radio)
 - [`docs/begginer/`](docs/begginer/) — Kezdő keretrendszer API (`cansat-edu-lib`) referencia
 
 ---

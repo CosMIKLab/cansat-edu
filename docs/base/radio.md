@@ -1,8 +1,17 @@
 # Radio Driver
 
-**Files:** `lib/radio/radio.hpp`, `lib/radio/radio.cpp`
+**Files:** `../../cansat-edu-lib/radio/radio.hpp`, `../../cansat-edu-lib/radio/radio.cpp` (+ shared `../../cansat-edu-lib/radio_proto`; consumed by `base/` via `lib_extra_dirs`)
 
-The radio module drives a LoRa transceiver (RN2483 or compatible) using its ASCII AT-command UART interface. The ESP8266 `Serial` (UART0, TX on GPIO1) is shared between the USB-to-serial adapter and the RN2483 via a **physical switch** on the board. The switch selects which device receives the UART signal.
+The radio module drives an E22-900M22S LoRa transceiver (SX1262 core) over its own SPI2
+bus (shared with the SD card, separate chip-select). Unlike the previous UART/AT-command
+design, this is a register-level SX126x command driver — no physical USB/Radio switch
+exists anymore, since the radio no longer shares the console UART.
+
+This is the newest and least field-tested part of the firmware: it implements the
+standard SX126x command sequence (documented publicly by Semtech and widely used by
+libraries such as RadioLib) from scratch, since the hardware's own reference firmware
+only implements a `GetStatus` presence check. Treat the TX/RX timing and IRQ handling as
+reviewed-but-unverified on real silicon.
 
 ---
 
@@ -10,13 +19,15 @@ The radio module drives a LoRa transceiver (RN2483 or compatible) using its ASCI
 
 ### `bool Radio::init()`
 
-Sends the 5 configuration commands to the radio module over `Serial` (shared UART). Make sure the physical switch is set to the **Radio** position before calling `init()`. Each command is written as:
+1. Configures RESET/RXEN as outputs, BUSY/DIO1 as inputs.
+2. Toggles RESET and waits for BUSY to clear.
+3. Sends `SetStandby(STDBY_RC)`.
+4. Reads the chip status byte (`GetStatus`) to confirm the SPI link is alive.
+5. Configures the LoRa modem: packet type, RF frequency, modulation params (SF/BW/CR),
+   packet params, PA config, TX power, buffer base addresses, and DIO IRQ mask.
 
-```
-radio set <setting>\r\n
-```
-
-Returns `true` unconditionally (the current implementation does not parse the module's response).
+Returns `true` if the status byte looks sane (not `0x00`/`0xFF`) and configuration
+completed.
 
 ```cpp
 if (!radio.init()) {
@@ -28,20 +39,17 @@ if (!radio.init()) {
 
 ### `bool Radio::send(const uint8_t* payload, uint8_t len)`
 
-Transmits a byte buffer as a hex-encoded LoRa packet using the RN2483 `radio tx` command:
-
-```
-radio tx <hex>\r\n
-```
-
-Each byte is zero-padded to two hex digits. Example: `{0x01, 0xAB, 0x0F}` → `radio tx 01AB0F\r\n`.
+Writes the payload into the SX126x's internal buffer (`WriteBuffer`), patches the packet
+length into `SetPacketParams`, clears pending IRQs, issues `SetTx` with a ~1 s timeout,
+and polls `GetIrqStatus` until `TX_DONE` or `TIMEOUT`.
 
 | Parameter | Description |
 |-----------|-------------|
 | `payload` | Pointer to byte array to transmit |
-| `len` | Number of bytes in the array |
+| `len` | Number of bytes in the array (max 255) |
 
-Returns `true` unconditionally.
+Returns `true` if `TX_DONE` was observed before the poll loop's own 2 s deadline;
+`false` otherwise.
 
 ```cpp
 uint8_t data[] = {0x01, 0x02, 0x03};
@@ -50,25 +58,75 @@ radio.send(data, sizeof(data));
 
 ---
 
-## LoRa configuration
+### `int Radio::receive(uint8_t* buffer, uint8_t maxLen, uint32_t timeoutMs)`
 
-The 5 settings sent during `init()` are stored in the private `_settings[]` array:
+Issues `SetRx` with the given timeout, polls for `RX_DONE`, then reads the received
+payload via `GetRxBufferStatus` + `ReadBuffer`.
 
-| Command | Value | Meaning |
-|---------|-------|---------|
-| `radio set mod lora` | — | Set modulation to LoRa |
-| `radio set freq 868100000` | 868.1 MHz | EU ISM band channel 0 |
-| `radio set sf sf7` | SF7 | Spreading factor 7 (shortest range, fastest) |
-| `radio set pa off` | — | Disable power amplifier path |
-| `radio set pwr 12` | 12 dBm | Transmit power |
+| Parameter | Description |
+|-----------|-------------|
+| `buffer` | Destination for received bytes |
+| `maxLen` | Capacity of `buffer` |
+| `timeoutMs` | How long to listen before giving up |
 
-To change a setting, edit the `_settings` array in `radio.cpp`.
+Returns the number of bytes received, or `-1` on timeout/failure.
+
+```cpp
+uint8_t buf[64];
+int n = radio.receive(buf, sizeof(buf), 2000);
+if (n > 0) {
+    Serial.printf("Received %d bytes\n", n);
+}
+```
 
 ---
 
-## Changing LoRa settings
+### `bool Radio::present() const`
 
-Common spreading factor / range tradeoffs:
+Returns whether `init()` successfully detected the radio (cached, no bus traffic).
+
+---
+
+## LoRa configuration
+
+Configured from `include/config.hpp` during `init()`:
+
+| Constant | Value | Meaning |
+|----------|-------|---------|
+| `RADIO_FREQ_HZ` | 868100000 | EU ISM band, 868.1 MHz |
+| `RADIO_SF` | 7 | Spreading factor 7 (shortest range, fastest) |
+| `RADIO_BW_KHZ` | 125 | LoRa bandwidth |
+| `RADIO_CR` | 5 | Coding rate 4/5 |
+| `RADIO_POWER_DBM` | 12 | Transmit power |
+
+PA config is set for the SX1262 high-power path (up to +22 dBm), matching the
+E22-900M22S module's rated output. To change frequency/SF/BW/CR/power, edit the
+constants in `config.hpp` — `Radio::init()` reads them directly.
+
+---
+
+## SX126x command opcodes used
+
+| Command | Opcode | Purpose |
+|---------|--------|---------|
+| `SetStandby` | `0x80` | Enter standby before configuration |
+| `SetPacketType` | `0x8A` | Select LoRa |
+| `SetRfFrequency` | `0x86` | Set carrier frequency |
+| `SetModulationParams` | `0x8B` | SF / BW / CR |
+| `SetPacketParams` | `0x8C` | Preamble, header type, payload length, CRC, IQ |
+| `SetPaConfig` | `0x95` | Power amplifier configuration |
+| `SetTxParams` | `0x8E` | TX power + ramp time |
+| `SetBufferBaseAddress` | `0x8F` | TX/RX buffer offsets |
+| `WriteBuffer` / `ReadBuffer` | `0x0E` / `0x1E` | Payload transfer |
+| `SetDioIrqParams` | `0x08` | Route IRQ flags to DIO1 |
+| `SetTx` / `SetRx` | `0x83` / `0x82` | Start transmit/receive with timeout |
+| `GetIrqStatus` / `ClearIrqStatus` | `0x12` / `0x02` | Poll and clear IRQ flags |
+| `GetRxBufferStatus` | `0x13` | Payload length + start address after RX |
+| `GetStatus` | `0xC0` | Chip status byte (used as a presence check) |
+
+---
+
+## Range/airtime tradeoffs
 
 | SF | Airtime (typical) | Range |
 |----|-------------------|-------|
@@ -82,9 +140,21 @@ CanSat flights typically use SF7 or SF9 to keep latency low during the descent p
 
 ## Notes
 
-- **Physical switch:** `Serial` (UART0, GPIO1 TX) is routed through a hardware switch. Set the switch to **USB** for `pio device monitor` / flashing; set it to **Radio** before a flight so AT commands reach the RN2483.
-- **Duty cycle:** The 868 MHz EU band enforces a 1% duty cycle. At SF7 with ~50 ms packets, the maximum safe transmission rate is roughly one packet per 5 seconds.
-- **Initialisation order:** `Radio::init()` must be called after `Board::init()` because it uses `Serial`, which `Board::init()` opens.
+- **No physical switch:** the radio is on its own SPI2 bus, independent of the USB
+  console UART — the serial monitor and radio work simultaneously.
+- **Shared SPI2 bus:** the SD card is on the same physical bus with a separate CS line
+  (`PIN_RADIO_CS` vs `PIN_SD_CS`). Both CS pins are held idle-high by `Board::init()`.
+- **RXEN pin:** this board wires antenna-switch control to a discrete GPIO (`PIN_RADIO_RXEN`)
+  rather than the SX126x's DIO2-as-RF-switch feature — the driver toggles it manually
+  around `send()`/`receive()`.
+- **Duty cycle:** the 868 MHz EU band enforces a 1% duty cycle. At SF7 with ~50 ms
+  packets, the maximum safe transmission rate is roughly one packet per 5 seconds.
+- **Initialisation order:** `Radio::init()` must be called after `Board::init()` because
+  it uses the SPI2 bus that `Board::init()` sets up.
+- **Regulator mode:** the driver does not call `SetRegulatorMode` and relies on the
+  SX1262's default (LDO). If the E22-900M22S module has a populated DC-DC regulator,
+  switching to `SetRegulatorMode(DCDC)` would reduce power draw — a good follow-up once
+  real hardware is available to verify against.
 
 ---
 

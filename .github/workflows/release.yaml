@@ -1,4 +1,4 @@
-name: Release cansat-edu-lib
+name: Release cansat-edu-lib + cansat-edu-lib-idf
 
 on:
   push:
@@ -13,13 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build cansat-edu-lib.zip
+      - name: Build cansat-edu-lib.zip + cansat-edu-lib-idf.zip
         run: ./tools/build_release.sh
 
       - name: Publish GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${{ github.ref_name }}" dist/cansat-edu-lib.zip \
+          gh release create "${{ github.ref_name }}" dist/cansat-edu-lib.zip dist/cansat-edu-lib-idf.zip \
             --title "${{ github.ref_name }}" \
             --generate-notes

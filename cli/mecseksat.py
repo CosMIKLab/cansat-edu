@@ -25,7 +25,7 @@ import urllib.request
 import zipfile
 from pathlib import Path
 
-LESSON_SERVER_BASE = os.environ.get("MECSEKSAT_SERVER", "https://learn.mecseksat.hu").rstrip("/")
+LESSON_SERVER_BASE = os.environ.get("MECSEKSAT_SERVER", "https://mecseksat.mik.pte.hu").rstrip("/")
 FRAMEWORK_BASE = os.environ.get(
     "MECSEKSAT_FRAMEWORK_BASE",
     "https://github.com/CosMIKLab/cansat-edu/releases/latest/download",
@@ -79,7 +79,7 @@ def api_get(path, auth=False, timeout=15):
 
 
 def fetch_manifest():
-    with api_get("/v1/lessons") as resp:
+    with api_get("/lessons/v1") as resp:
         return json.load(resp)
 
 
@@ -137,29 +137,41 @@ def _extract_lesson_files(src, dest, skip):
 
 
 def download_zip_bytes(track, number):
-    with api_get(f"/v1/download/{track}/{number}", auth=True) as resp:
+    with api_get(f"/lessons/v1/{track}/{number}", auth=True) as resp:
         return resp.read()
 
 
-def ensure_shared_lib(cwd_root):
-    """begginer only: make sure cansat-edu-lib/ exists next to begginer/, fetched
-    openly (no key) from the public framework releases."""
-    lib_dir = cwd_root / "cansat-edu-lib"
+FRAMEWORK_LIBS = {
+    "begginer": ["cansat-edu-lib"],
+    "intermediate": ["cansat-edu-lib"],
+    "advanced": ["cansat-edu-lib-idf"],
+}
+
+
+def ensure_shared_lib(cwd_root, lib_name):
+    """Make sure <lib_name>/ exists next to the track dirs, fetched openly
+    (no key) from the public framework releases."""
+    lib_dir = cwd_root / lib_name
     if lib_dir.exists():
         return
-    print("==> Fetching shared framework (cansat-edu-lib, public, no key needed)...")
-    url = f"{FRAMEWORK_BASE}/cansat-edu-lib.zip"
+    print(f"==> Fetching shared framework ({lib_name}, public, no key needed)...")
+    url = f"{FRAMEWORK_BASE}/{lib_name}.zip"
     try:
         with urllib.request.urlopen(url, timeout=30) as resp:
             data = resp.read()
     except (urllib.error.HTTPError, urllib.error.URLError) as exc:
-        print(f"Could not fetch cansat-edu-lib ({exc}). You'll need it to build begginer lessons.")
+        print(f"Could not fetch {lib_name} ({exc}). You'll need it to build these lessons.")
         return
     with tempfile.TemporaryDirectory() as tmp:
         zip_path = Path(tmp) / "lib.zip"
         zip_path.write_bytes(data)
         with zipfile.ZipFile(zip_path) as zf:
             zf.extractall(cwd_root)
+
+
+def ensure_shared_libs(track, cwd_root):
+    for lib_name in FRAMEWORK_LIBS.get(track, []):
+        ensure_shared_lib(cwd_root, lib_name)
 
 
 def cmd_get(args):
@@ -188,8 +200,7 @@ def cmd_get(args):
         dest.mkdir(parents=True, exist_ok=True)
         _extract_lesson_files(src, dest, skip=set())
 
-    if track == "begginer":
-        ensure_shared_lib(cwd)
+    ensure_shared_libs(track, cwd)
 
     rel_dest = dest.relative_to(cwd)
     print(f"==> Downloaded to {rel_dest}")
@@ -228,8 +239,7 @@ def cmd_update(args):
         src = extract_dir / meta["track"] / meta["dir_name"]
         _extract_lesson_files(src, Path("."), skip={protected, ".cansat-lesson.json"})
 
-    if meta["track"] == "begginer":
-        ensure_shared_lib(Path("..") / "..")  # best-effort, only fetches if missing
+    ensure_shared_libs(meta["track"], Path("..") / "..")  # best-effort, only fetches if missing
 
     meta["version"] = entry["version"]
     Path(".cansat-lesson.json").write_text(json.dumps(meta, indent=2))

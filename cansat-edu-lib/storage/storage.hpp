@@ -6,8 +6,10 @@
 struct TelemetryRecord {
     uint32_t time_ms;
     float temp, pressure, humidity;
+    float temp_secondary;  // TMP102
     float ax, ay, az;
     float gx, gy, gz;
+    char  nmea[64];  // latest GNSS sentence, empty if none
 };
 
 namespace Storage {

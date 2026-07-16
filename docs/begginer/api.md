@@ -8,23 +8,29 @@ Include everything with one line at the top of `mission.cpp`:
 #include <cansat.h>
 ```
 
-This exposes five global objects: `sensors`, `radio`, `wifi`, `sd`, and `board` (internal).
+This exposes six global objects: `sensors`, `radio`, `wifi`, `sd`, `led`, and `board` (internal).
 
 ---
 
 ## sensors
 
-Reads the BME280 (environment) and LSM6DSOX (motion) sensors.
+Reads the BMP580 (pressure/temperature), AHT20 (humidity/temperature), TMP102
+(secondary temperature), LSM6DS3 (motion), and SAM-M8Q (GNSS) sensors. The object
+presents them as one simple interface — you don't need to know which physical chip
+answers which call.
 
 ### Environment
 
 ```cpp
-float sensors.temperature()  // Temperature in degrees Celsius
-float sensors.pressure()     // Atmospheric pressure in hPa
-float sensors.humidity()     // Relative humidity in percent (%)
+float sensors.temperature()            // Temperature in degrees Celsius (from BMP580)
+float sensors.pressure()               // Atmospheric pressure in hPa (from BMP580)
+float sensors.humidity()               // Relative humidity in percent (%) (from AHT20)
+float sensors.temperature_secondary()  // Secondary temperature reading (from TMP102)
 ```
 
-Calling `sensors.temperature()` triggers a fresh read of all three values. Call it first; `pressure()` and `humidity()` return the values cached from that read.
+Calling `sensors.temperature()` triggers a fresh read of every sensor. Call it first;
+`pressure()`, `humidity()`, and `temperature_secondary()` return the values cached from
+that read.
 
 ### Motion (accelerometer)
 
@@ -34,7 +40,7 @@ float sensors.accel_y()  // Acceleration on Y axis in g
 float sensors.accel_z()  // Acceleration on Z axis in g  (≈1.0 when flat)
 ```
 
-Range: ±2 g. Sensitivity: 0.061 mg/LSB (LSM6DSOX ±2 g mode).
+Range: ±2 g. Sensitivity: 0.061 mg/LSB (LSM6DS3 ±2 g mode).
 
 ### Motion (gyroscope)
 
@@ -44,7 +50,19 @@ float sensors.gyro_y()  // Rotation rate on Y axis in degrees per second
 float sensors.gyro_z()  // Rotation rate on Z axis in degrees per second
 ```
 
-Range: ±250 dps. Sensitivity: 8.75 mdps/LSB.
+Range: ±245 dps. Sensitivity: 8.75 mdps/LSB.
+
+### GNSS
+
+```cpp
+bool sensors.gnss_available()          // true if the GNSS module answered on the I2C bus
+const char* sensors.gnss_sentence()    // latest raw NMEA sentence, or "" if none yet
+```
+
+The GNSS module is optional hardware and its data is raw NMEA text (e.g.
+`$GNRMC,...`) — this framework doesn't parse coordinates out of it for you. Turning a
+sentence like `gnss_sentence()` into a latitude/longitude pair is a good intermediate-track
+exercise.
 
 ### Example
 
@@ -61,7 +79,9 @@ Serial.print("Temp: "); Serial.print(temp); Serial.println(" C");
 
 ## radio
 
-Sends data over LoRa (RN2483, 868.1 MHz, SF7). The physical UART switch on the board must be in the **Radio** position during flight.
+Sends data over LoRa (E22-900M22S, SX1262 core, 868.1 MHz, SF7). The radio lives on its
+own SPI bus — no physical switch to flip, the serial monitor and radio work at the same
+time.
 
 ```cpp
 void radio.send(float a, float b, float c)
@@ -88,8 +108,8 @@ radio.send("max altitude reached");
 
 ## wifi
 
-Connects to a WiFi network and sends data to an HTTP endpoint.  
-ESP8266 built-in WiFi — no extra hardware needed.
+Connects to a WiFi network and sends data to an HTTP endpoint.
+ESP32-S3 built-in WiFi — no extra hardware needed.
 
 ```cpp
 void wifi.connect(const char* ssid, const char* password)
@@ -125,6 +145,39 @@ void mission_loop() {
 
 ---
 
+## led
+
+Sets the panel's WS2816B status LED — useful for showing state without a serial monitor
+attached (e.g. during flight).
+
+```cpp
+void led.begin()
+```
+Initialises the LED. Called automatically by the framework's `main.cpp` before
+`mission_setup()` — you don't normally need to call this yourself.
+
+```cpp
+void led.set(uint8_t r, uint8_t g, uint8_t b)
+```
+Sets the LED color. Example: `led.set(0, 32, 0)` for a dim green.
+
+```cpp
+void led.clear()
+```
+Turns the LED off.
+
+### Example
+
+```cpp
+if (tilt < 0.5) {
+    led.set(255, 0, 0);  // red = tilted
+} else {
+    led.set(0, 32, 0);   // green = level
+}
+```
+
+---
+
 ## sd
 
 Logs data to the SD card. Each power-on creates a new session folder (`S001`, `S002`, …) containing two files:
@@ -152,8 +205,8 @@ sd.note("apogee detected");
 
 Resulting `telem.csv`:
 ```
-time_ms,temp_c,press_hpa,hum_pct,ax_g,ay_g,az_g,gx_dps,gy_dps,gz_dps
-2000,23.45,1013.25,48.70,0.000,0.000,1.000,0.00,0.00,0.00
+time_ms,temp_c,press_hpa,hum_pct,temp2_c,ax_g,ay_g,az_g,gx_dps,gy_dps,gz_dps,nmea
+2000,23.45,1013.25,48.70,23.40,0.000,0.000,1.000,0.00,0.00,0.00,""
 ```
 
 Resulting `events.txt`:
@@ -162,7 +215,8 @@ Resulting `events.txt`:
 [    4312] apogee detected
 ```
 
-> SD card must be FAT32 formatted. GPIO15 is the SPI CS pin — it requires a 10 kΩ pull-down to GND for proper ESP8266 boot behaviour (handled by the PCB).
+> SD card must be FAT32 formatted. The SD card shares the SPI2 bus with the LoRa radio
+> (separate chip-select pins) — `board.init()` sets both up before either device is used.
 
 ---
 
@@ -190,7 +244,10 @@ void mission_loop() {
     sd.log(temp, pressure, humidity);
 
     if (tilt < 0.5) {
+        led.set(255, 0, 0);
         sd.note("tilted more than 60 degrees!");
+    } else {
+        led.set(0, 32, 0);
     }
 }
 ```

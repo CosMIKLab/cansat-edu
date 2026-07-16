@@ -53,7 +53,7 @@ bool init(uint8_t cs_pin) {
     snprintf(path, sizeof(path), "/%s/telem.csv", session);
     _telem = SD.open(path, FILE_WRITE);
     if (!_telem) return false;
-    _telem.println("time_ms,temp_c,press_hpa,hum_pct,ax_g,ay_g,az_g,gx_dps,gy_dps,gz_dps");
+    _telem.println("time_ms,temp_c,press_hpa,hum_pct,temp2_c,ax_g,ay_g,az_g,gx_dps,gy_dps,gz_dps,nmea");
     _telem.flush();
 
     snprintf(path, sizeof(path), "/%s/events.txt", session);
@@ -70,16 +70,42 @@ bool init(uint8_t cs_pin) {
     return true;
 }
 
+// Wraps text in double quotes and doubles any embedded quotes — needed because NMEA
+// sentences themselves contain commas, which would otherwise split CSV columns.
+static void csvQuote(char* out, size_t outLen, const char* text) {
+    if (outLen < 3) {
+        if (outLen > 0) out[0] = '\0';
+        return;
+    }
+    size_t pos = 0;
+    out[pos++] = '"';
+    for (size_t i = 0; text[i] != '\0' && pos + 2 < outLen; i++) {
+        if (text[i] == '"') {
+            if (pos + 3 >= outLen) break;
+            out[pos++] = '"';
+            out[pos++] = '"';
+        } else if (text[i] >= 32 && text[i] <= 126) {
+            out[pos++] = text[i];
+        }
+    }
+    out[pos++] = '"';
+    out[pos] = '\0';
+}
+
 bool log(const TelemetryRecord& r) {
     if (!_ok || !_telem) return false;
 
-    char buf[96];
+    char nmeaCsv[72];
+    csvQuote(nmeaCsv, sizeof(nmeaCsv), r.nmea);
+
+    char buf[196];
     snprintf(buf, sizeof(buf),
-        "%lu,%.2f,%.2f,%.2f,%.3f,%.3f,%.3f,%.2f,%.2f,%.2f",
+        "%lu,%.2f,%.2f,%.2f,%.2f,%.3f,%.3f,%.3f,%.2f,%.2f,%.2f,%s",
         (unsigned long)r.time_ms,
-        r.temp, r.pressure, r.humidity,
+        r.temp, r.pressure, r.humidity, r.temp_secondary,
         r.ax, r.ay, r.az,
-        r.gx, r.gy, r.gz);
+        r.gx, r.gy, r.gz,
+        nmeaCsv);
     _telem.println(buf);
 
     if (++_writeCount % SD_FLUSH_EVERY == 0) _telem.flush();

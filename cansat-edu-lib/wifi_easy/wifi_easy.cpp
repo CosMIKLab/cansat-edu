@@ -1,6 +1,6 @@
 #include "wifi_easy.hpp"
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
+#include <WiFi.h>
+#include <HTTPClient.h>
 #include <WiFiClient.h>
 
 void WiFiEasy::connect(const char* ssid, const char* password) {
