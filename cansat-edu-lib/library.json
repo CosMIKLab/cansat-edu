@@ -5,7 +5,7 @@
   "keywords": ["cansat", "mecseksat", "bmp580", "aht20", "tmp102", "lsm6ds3", "gnss", "lora", "sx1262", "education"],
   "repository": {
     "type": "git",
-    "url": "https://github.com/mecseksat/cansat-edu"
+    "url": "https://github.com/CosMIKLab/cansat-edu"
   },
   "authors": [
     {
