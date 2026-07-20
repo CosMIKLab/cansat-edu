@@ -153,3 +153,4 @@ futtatni (ott, ahol a `.cansat-lesson.json` fájl van).
 | [begginer/getting-started.md](begginer/getting-started.md) | Kezdő pálya első futtatás, CLI referencia |
 | [begginer/api.md](begginer/api.md) | Kezdő pálya teljes API referencia |
 | [base/overview.md](base/overview.md) | A referencia firmware (`base/`) felépítése |
+
