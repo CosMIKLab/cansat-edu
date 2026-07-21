@@ -48,7 +48,9 @@ if (!gnss.init()) {
 1. Reads the 2-byte pending-byte-count register (`0xFD`).
 2. If bytes are pending, reads up to 32 bytes from the data-stream register (`0xFF`).
 3. Appends the new bytes to a 192-byte rolling ASCII window.
-4. Scans the window for the last `$...\n` sequence and copies it into `data.nmea`.
+4. Scans the window for the last `$...\n` sequence, copies it into `data.nmea`,
+   then discards everything through that sentence from the window — each
+   sentence is only ever returned once, not repeated on subsequent polls.
 
 ```cpp
 GnssData d;

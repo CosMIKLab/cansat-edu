@@ -27,11 +27,11 @@ void mission_setup() {
     float az = sensors.accel_z();
 
     bool bmp_ok = (nyomas > 300.0f && nyomas < 1100.0f);
-    bool aht_ok = (paratartalom >= 0.0f && paratartalom <= 100.0f);
+    bool aht_ok = sensors.aht20_present() && (paratartalom >= 0.0f && paratartalom <= 100.0f);
     result("Homerseklet:  ", (homerseklet > -40.0f && homerseklet < 85.0f && bmp_ok), homerseklet, "*C");
     result("Legnyomas:    ", bmp_ok, nyomas, "hPa");
     result("Paratartalom: ", aht_ok, paratartalom, "%");
-    result("Homerseklet2: ", (homerseklet2 > -40.0f && homerseklet2 < 85.0f), homerseklet2, "*C");
+    result("Homerseklet2: ", sensors.tmp102_present() && (homerseklet2 > -40.0f && homerseklet2 < 85.0f), homerseklet2, "*C");
 
     float mag = sqrt(ax * ax + ay * ay + az * az);
     bool imu_ok = (mag > 0.5f && mag < 2.0f);

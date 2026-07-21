@@ -123,6 +123,17 @@ def cmd_list(args):
     print(f"\nDownload one with: mecseksat get <track>/<number>  (e.g. mecseksat get begginer/1)")
 
 
+def _safe_extractall(zf, dest):
+    """extractall() with a zip-slip guard: refuses to extract if any member's
+    resolved path would land outside dest (e.g. via '../' in the entry name)."""
+    dest = Path(dest).resolve()
+    for member in zf.infolist():
+        target = (dest / member.filename).resolve()
+        if target != dest and dest not in target.parents:
+            raise ValueError(f"Unsafe path in zip, refusing to extract: {member.filename}")
+    zf.extractall(dest)
+
+
 def _extract_lesson_files(src, dest, skip):
     for root, _dirs, files in os.walk(src):
         for name in files:
@@ -166,7 +177,7 @@ def ensure_shared_lib(cwd_root, lib_name):
         zip_path = Path(tmp) / "lib.zip"
         zip_path.write_bytes(data)
         with zipfile.ZipFile(zip_path) as zf:
-            zf.extractall(cwd_root)
+            _safe_extractall(zf, cwd_root)
 
 
 def ensure_shared_libs(track, cwd_root):
@@ -194,8 +205,11 @@ def cmd_get(args):
         zip_path.write_bytes(data)
         extract_dir = Path(tmp) / "extracted"
         with zipfile.ZipFile(zip_path) as zf:
-            zf.extractall(extract_dir)
+            _safe_extractall(zf, extract_dir)
         src = extract_dir / track / entry["dir_name"]
+        if not src.exists():
+            print(f"Downloaded archive did not contain {track}/{entry['dir_name']}; aborting.")
+            sys.exit(1)
         dest = cwd / track / entry["dir_name"]
         dest.mkdir(parents=True, exist_ok=True)
         _extract_lesson_files(src, dest, skip=set())
@@ -235,8 +249,11 @@ def cmd_update(args):
         zip_path.write_bytes(data)
         extract_dir = Path(tmp) / "extracted"
         with zipfile.ZipFile(zip_path) as zf:
-            zf.extractall(extract_dir)
+            _safe_extractall(zf, extract_dir)
         src = extract_dir / meta["track"] / meta["dir_name"]
+        if not src.exists():
+            print(f"Downloaded archive did not contain {meta['track']}/{meta['dir_name']}; aborting.")
+            sys.exit(1)
         _extract_lesson_files(src, Path("."), skip={protected, ".cansat-lesson.json"})
 
     ensure_shared_libs(meta["track"], Path("..") / "..")  # best-effort, only fetches if missing

@@ -22,13 +22,21 @@ over a LoRa radio.
 
 ## Architecture
 
-The firmware is structured as independent C++ library modules under `lib/`. Each module owns its hardware resource and exposes a minimal public API.
+The firmware itself (`base/`) has no in-repo `lib/` — `base/lib/` is empty. Driver
+modules are independent C++ library modules that live in the sibling
+`cansat-edu-lib/` directory and are pulled in via `lib_extra_dirs =
+../cansat-edu-lib` in `base/platformio.ini`. Each module owns its hardware
+resource and exposes a minimal public API.
 
 ```
 cansat-edu/
-├── include/
-│   └── config.hpp          ← board-wide constants (pins, addresses, sensitivity, radio params)
-├── lib/
+├── base/
+│   ├── include/
+│   │   └── config.hpp      ← board-wide constants (pins, addresses, sensitivity, radio params)
+│   ├── src/
+│   │   └── main.cpp        ← Arduino setup() / loop() entry point
+│   └── platformio.ini      ← lib_extra_dirs = ../cansat-edu-lib
+├── cansat-edu-lib/
 │   ├── board/              ← Serial + I2C + shared SPI2 bus initialisation
 │   ├── bmp580/              ← BMP580 pressure/temperature driver
 │   ├── aht20/               ← AHT20 humidity/temperature driver
@@ -37,10 +45,8 @@ cansat-edu/
 │   ├── gnss/                ← SAM-M8Q GNSS/NMEA driver
 │   ├── led/                 ← WS2816B status LED driver
 │   ├── storage/              ← SD card CSV/event logger (shares SPI2 with radio)
-│   ├── wifi/                 ← WiFi + HTTP client wrapper
+│   ├── wifi_easy/            ← WiFi + HTTP client wrapper
 │   └── radio/                ← LoRa radio driver (E22-900M22S / SX126x command set)
-├── src/
-│   └── main.cpp            ← Arduino setup() / loop() entry point
 └── docs/                   ← this folder
 ```
 

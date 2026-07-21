@@ -11,41 +11,40 @@ static float    _ahtTemp = 0;
 static ImuData  _imu  = {};
 static GnssData _gnss = {};
 
-static void _refresh() {
-    bmp580.read(_temp, _press);
-    aht20.read(_ahtTemp, _hum);
-    tmp102.read(_temp2);
-    imu.read(_imu);
-    gnss.read(_gnss);
-}
+static bool _bmpPresent = false, _ahtPresent = false, _tmpPresent = false, _imuPresent = false;
 
 void Sensors::begin() {
-    bool bmpOk  = bmp580.init();
-    bool ahtOk  = aht20.init();
-    bool tmpOk  = tmp102.init();
-    bool imuOk  = imu.init();
+    _bmpPresent = bmp580.init();
+    _ahtPresent = aht20.init();
+    _tmpPresent = tmp102.init();
+    _imuPresent = imu.init();
     bool gnssOk = gnss.init();
-    Serial.println(bmpOk  ? "Sensors: BMP580 OK"  : "Sensors: BMP580 not found");
-    Serial.println(ahtOk  ? "Sensors: AHT20 OK"   : "Sensors: AHT20 not found");
-    Serial.println(tmpOk  ? "Sensors: TMP102 OK"  : "Sensors: TMP102 not found");
-    Serial.println(imuOk  ? "Sensors: IMU OK"     : "Sensors: IMU not found");
-    Serial.println(gnssOk ? "Sensors: GNSS OK"    : "Sensors: GNSS not found (optional)");
+    Serial.println(_bmpPresent ? "Sensors: BMP580 OK"  : "Sensors: BMP580 not found");
+    Serial.println(_ahtPresent ? "Sensors: AHT20 OK"   : "Sensors: AHT20 not found");
+    Serial.println(_tmpPresent ? "Sensors: TMP102 OK"  : "Sensors: TMP102 not found");
+    Serial.println(_imuPresent ? "Sensors: IMU OK"     : "Sensors: IMU not found");
+    Serial.println(gnssOk       ? "Sensors: GNSS OK"    : "Sensors: GNSS not found (optional)");
 }
 
-float Sensors::temperature()           { _refresh(); return _temp; }
-float Sensors::pressure()              { return _press; }
-float Sensors::humidity()              { return _hum; }
-float Sensors::temperature_secondary() { return _temp2; }
+bool Sensors::bmp580_present() { return _bmpPresent; }
+bool Sensors::aht20_present()  { return _ahtPresent; }
+bool Sensors::tmp102_present() { return _tmpPresent; }
+bool Sensors::imu_present()    { return _imuPresent; }
 
-float Sensors::accel_x() { return _imu.ax; }
-float Sensors::accel_y() { return _imu.ay; }
-float Sensors::accel_z() { return _imu.az; }
+float Sensors::temperature()           { bmp580.read(_temp, _press); return _temp; }
+float Sensors::pressure()              { bmp580.read(_temp, _press); return _press; }
+float Sensors::humidity()              { aht20.read(_ahtTemp, _hum); return _hum; }
+float Sensors::temperature_secondary() { tmp102.read(_temp2); return _temp2; }
 
-float Sensors::gyro_x()  { return _imu.gx; }
-float Sensors::gyro_y()  { return _imu.gy; }
-float Sensors::gyro_z()  { return _imu.gz; }
+float Sensors::accel_x() { imu.read(_imu); return _imu.ax; }
+float Sensors::accel_y() { imu.read(_imu); return _imu.ay; }
+float Sensors::accel_z() { imu.read(_imu); return _imu.az; }
 
-bool Sensors::gnss_available()      { return _gnss.present; }
-const char* Sensors::gnss_sentence(){ return _gnss.nmea; }
+float Sensors::gyro_x()  { imu.read(_imu); return _imu.gx; }
+float Sensors::gyro_y()  { imu.read(_imu); return _imu.gy; }
+float Sensors::gyro_z()  { imu.read(_imu); return _imu.gz; }
+
+bool Sensors::gnss_available()      { gnss.read(_gnss); return _gnss.present; }
+const char* Sensors::gnss_sentence(){ gnss.read(_gnss); return _gnss.nmea; }
 
 Sensors sensors;

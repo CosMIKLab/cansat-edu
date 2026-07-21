@@ -47,6 +47,13 @@ static void updateLatestNmea(GnssData& out) {
     if (len > sizeof(out.nmea) - 1) len = sizeof(out.nmea) - 1;
     memcpy(out.nmea, bestStart, len);
     out.nmea[len] = '\0';
+
+    // Consume everything through the sentence just reported so the same
+    // line isn't returned again on the next poll.
+    const char* rest = bestEnd + 1;
+    size_t remaining = strlen(rest);
+    memmove(_streamWindow, rest, remaining + 1);
+    _streamLen = (uint8_t)remaining;
 }
 
 bool GNSS::init() {

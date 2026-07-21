@@ -52,6 +52,7 @@ void Radio::reset() {
 
 void Radio::writeCommand(uint8_t opcode, const uint8_t* params, uint8_t len) {
     waitWhileBusy(100);
+    if (len > 32) len = 32;  // tx[] below only has room for opcode + 32 param bytes
     uint8_t tx[1 + 32] = {};
     tx[0] = opcode;
     memcpy(tx + 1, params, len);

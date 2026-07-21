@@ -11,6 +11,25 @@ using namespace radio_proto;
 
 static bool _ready = false;
 
+static uint8_t bandwidthToReg(uint16_t khz) {
+    switch (khz) {
+        case 125: return 0x04;
+        case 250: return 0x05;
+        case 500: return 0x06;
+        default:  return 0x04;
+    }
+}
+
+static uint8_t codingRateToReg(uint8_t denominator) {
+    switch (denominator) {
+        case 5: return 0x01;  // 4/5
+        case 6: return 0x02;  // 4/6
+        case 7: return 0x03;  // 4/7
+        case 8: return 0x04;  // 4/8
+        default: return 0x01;
+    }
+}
+
 void RadioEasy::begin() {
     pinMode(PIN_RADIO_BUSY, INPUT);
     pinMode(PIN_RADIO_DIO1, INPUT);
@@ -41,7 +60,7 @@ void RadioEasy::begin() {
     };
     writeCommand(CMD_SET_RF_FREQUENCY, freqParams, sizeof(freqParams));
 
-    uint8_t modParams[4] = { RADIO_SF, 0x04, 0x01, 0x00 };  // SF7, 125 kHz BW, CR 4/5
+    uint8_t modParams[4] = { RADIO_SF, bandwidthToReg(RADIO_BW_KHZ), codingRateToReg(RADIO_CR), 0x00 };
     writeCommand(CMD_SET_MODULATION_PARAMS, modParams, sizeof(modParams));
 
     uint8_t pktParams[9] = { 0x00, 0x08, 0x00, 0xFF, 0x01, 0x00, 0x00, 0x00, 0x00 };

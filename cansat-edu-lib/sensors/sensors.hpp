@@ -4,6 +4,10 @@
 class Sensors {
 public:
     void begin();
+    bool bmp580_present();
+    bool aht20_present();
+    bool tmp102_present();
+    bool imu_present();
     float temperature();
     float pressure();
     float humidity();

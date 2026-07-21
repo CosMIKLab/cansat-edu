@@ -79,3 +79,7 @@ Framework-release csomagolás (`cansat-edu-lib.zip` a GitHub Releases-hez):
 
 Lásd [`docs/download-guide.md`](docs/download-guide.md) a diák oldali folyamathoz, és a
 (privát) content repó `tools/README.md`-jét a lecke-tartalom csomagolásához.
+
+**Teljes karbantartási útmutató** (repók közötti lépések: mikor kell release-t
+vágni, mi nem frissül automatikusan, stb.): a workspace gyökerén
+[`docs/maintaining.md`](../docs/maintaining.md).

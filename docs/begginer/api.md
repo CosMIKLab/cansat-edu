@@ -28,9 +28,9 @@ float sensors.humidity()               // Relative humidity in percent (%) (from
 float sensors.temperature_secondary()  // Secondary temperature reading (from TMP102)
 ```
 
-Calling `sensors.temperature()` triggers a fresh read of every sensor. Call it first;
-`pressure()`, `humidity()`, and `temperature_secondary()` return the values cached from
-that read.
+Each call independently triggers a fresh read of its own sensor — there's no
+required call order between `temperature()`, `pressure()`, `humidity()`, and
+`temperature_secondary()`.
 
 ### Motion (accelerometer)
 
